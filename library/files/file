@@ -147,14 +147,21 @@ def main():
                     except Exception, e:
                         module.fail_json(msg="rmtree failed: %s" % str(e))
                 else:
-                    if prev_state in ['link','hard'] and protect:
-                         module.exit_json(path=path, changed=False, msg='file (%s) is %s. Links was protected' % (path, prev_state))
+                    if prev_state == 'link' and protect:
+                        old_src = os.readlink(path)
+                        if old_src != src:
+                            try:
+                                os.unlink(path)
+                            except Exception, e:
+                                module.fail_json(path=path, msg="unlinking failed: %s " % str(e))
+                        else:
+                            module.exit_json(path=path, changed=False, msg='file (%s) is %s. Links was protected' % (path, prev_state))
                     else:
                         try:
                             os.unlink(path)
                         except Exception, e:
                             module.fail_json(path=path, msg="unlinking failed: %s " % str(e))
-            module.exit_json(path=path, changed=True)
+            module.exit_json(path=path, src=src, changed=True)
         else:
             module.exit_json(path=path, changed=False)
 
